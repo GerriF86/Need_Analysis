@@ -1,96 +1,94 @@
-"""State update helpers used across wizard steps."""
-
-from __future__ import annotations
-
+"""State-update helpers – generate placeholders / suggestions."""
 from typing import Any
 
 
 def update_task_list(state: dict[str, Any]) -> None:
-    """Populate ``task_list`` with generic tasks based on the role.
+    """Populate `task_list` with generic tasks based on the role.
 
-    Parameters
-    ----------
-    state:
-        Session dictionary storing wizard fields.
+    Args:
+        state: Streamlit `st.session_state` dictionary.
     """
     if state.get("task_list"):
         return
-    role = state.get("job_title") or state.get("role_description")
-    if not role:
-        return
-    tasks = [f"{role} task {i}" for i in range(1, 6)]
-    state["task_list"] = "\n".join(tasks)
+
+    role = state.get("job_title", "").lower()
+    if "developer" in role:
+        state["task_list"] = [
+            "Build new features",
+            "Refactor legacy modules",
+            "Write unit tests",
+        ]
+    elif "sales" in role:
+        state["task_list"] = [
+            "Prospect and qualify leads",
+            "Prepare demos",
+            "Negotiate contracts",
+        ]
 
 
 def update_must_have_skills(state: dict[str, Any]) -> None:
-    """Fill ``must_have_skills`` with placeholder skills."""
+    """Fill `must_have_skills` with placeholder skills.
+
+    Args:
+        state: Streamlit `st.session_state`.
+    """
     if state.get("must_have_skills"):
         return
-    role = state.get("job_title") or "role"
-    skills = [f"{role} skill {i}" for i in range(1, 6)]
-    state["must_have_skills"] = ", ".join(skills)
+    role = state.get("job_title", "").lower()
+    if "python" in role:
+        state["must_have_skills"] = ["Python 3.11", "AsyncIO", "pytest"]
+    elif "sales" in role:
+        state["must_have_skills"] = ["CRM", "Negotiation", "Lead generation"]
 
 
 def update_nice_to_have_skills(state: dict[str, Any]) -> None:
-    """Suggest three complementary skills."""
+    """Suggest complementary skills.
+
+    Args:
+        state: Streamlit `st.session_state`.
+    """
     if state.get("nice_to_have_skills"):
         return
-    if not state.get("must_have_skills"):
-        return
-    extras = ["extra skill 1", "extra skill 2", "extra skill 3"]
-    state["nice_to_have_skills"] = ", ".join(extras)
+    state["nice_to_have_skills"] = ["Public speaking", "Problem-solving", "Data analysis"]
 
 
 def update_salary_range(state: dict[str, Any]) -> None:
-    """Provide a simple salary range estimate if missing."""
-    current = str(state.get("salary_range", "")).strip().lower()
-    if current and current != "competitive":
+    """Provide a simple salary range estimate (EUR)."""
+    if state.get("salary_min") or state.get("salary_max"):
         return
-    state["salary_range"] = "45000 – 55000 EUR"
+    state["salary_min"], state["salary_max"] = 60000, 80000
 
 
 def update_publication_channels(state: dict[str, Any]) -> None:
     """Recommend publication channels for remote roles."""
-    policy = str(state.get("remote_work_policy", "")).lower()
-    if policy in {"hybrid", "full remote"}:
-        state["desired_publication_channels"] = "LinkedIn Remote Jobs; WeWorkRemotely"
+    if state.get("publication_channels"):
+        return
+    channels = ["LinkedIn", "Indeed", "StepStone"]
+    if state.get("is_remote"):
+        channels.append("We Work Remotely")
+    state["publication_channels"] = channels
 
 
 def update_bonus_scheme(state: dict[str, Any]) -> None:
-    """Add a bonus scheme suggestion for senior roles."""
+    """Add a bonus scheme suggestion for mid/senior roles."""
     if state.get("bonus_scheme"):
         return
-    level = str(state.get("job_level", "")).lower()
-    if level in {"mid", "senior", "lead", "management"}:
-        state["bonus_scheme"] = "Eligible for an annual performance bonus."
+    senior = any(word in state.get("job_title", "").lower() for word in ("senior", "lead"))
+    if senior:
+        state["bonus_scheme"] = "Annual performance bonus up to 15 % of salary."
 
 
 def update_commission_structure(state: dict[str, Any]) -> None:
-    """Suggest commission structure for sales-related titles."""
+    """Suggest commission structure for sales roles."""
     if state.get("commission_structure"):
         return
-    title = str(state.get("job_title", "")).lower()
-    sales_terms = [
-        "sales",
-        "business development",
-        "account executive",
-        "account manager",
-    ]
-    if any(term in title for term in sales_terms):
-        state["commission_structure"] = "Commission based on sales performance."
+    if "sales" in state.get("job_title", "").lower():
+        state["commission_structure"] = "Quarterly quota with 8 % commission on gross profit."
 
 
 def update_translation_required(state: dict[str, Any]) -> None:
-    """Mark whether translation is needed based on language fields."""
-    if not state.get("language_requirements"):
+    """Mark whether translation is needed (DE ⇄ EN)."""
+    if state.get("translation_required") is not None:
         return
-    required = {
-        lang.strip().lower()
-        for lang in state["language_requirements"].split(",")
-        if lang.strip()
-    }
-    ad_lang = str(state.get("language_of_ad", "English")).lower()
-    if ad_lang and ad_lang not in required:
-        state["translation_required"] = "Yes"
-    else:
-        state["translation_required"] = "No"
+    lang = state.get("language", "de")
+    state["translation_required"] = lang not in ("de", "en")

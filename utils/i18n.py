@@ -1,11 +1,12 @@
-"""Simple i18n helpers."""
-
-from __future__ import annotations
+"""Simple helper for 'de / en' split labels."""
 
 
 def tr(text: str, lang: str) -> str:
-    """Return language specific part of a 'de / en' string."""
-    if " / " in text:
-        left, right = text.split(" / ", 1)
-        return left.strip() if lang == "de" else right.strip()
-    return text
+    """Return the language-specific part of a 'de / en' combined string.
+
+    Args:
+        text: String containing German and English parts separated by " / ".
+        lang: Target language code ("de" or "en").
+    """
+    parts = text.split(" / ")
+    return parts[0] if lang == "de" else (parts[1] if len(parts) > 1 else text)
